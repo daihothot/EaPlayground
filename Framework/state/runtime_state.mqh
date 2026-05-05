@@ -1,7 +1,8 @@
 #ifndef FRAMEWORK_STATE_RUNTIME_STATE_MQH
 #define FRAMEWORK_STATE_RUNTIME_STATE_MQH
+#include <Object.mqh>
 
-class CRuntimeState
+class CRuntimeState : public CObject
 {
 public:
    // --- derived / historical state (must be recorded) ---

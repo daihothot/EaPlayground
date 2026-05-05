@@ -24,13 +24,17 @@ int OnInit()
 
    RegisterStrategies(g_launcher.Registry());
 
-   int result = g_launcher.Launch();
-   if(result != INIT_SUCCEEDED) return result;
+   // Configure the global container first — after this, any module can Resolve().
+   g_lifecycle.Init(g_launcher.Bundle());
 
-   g_lifecycle.Init(g_launcher.Bundle(), g_launcher.Dispatcher());
-   return INIT_SUCCEEDED;
+   return g_launcher.Launch();
 }
 
-void OnDeinit(const int reason) { g_lifecycle.OnDeinit(reason); g_launcher.Teardown(reason); }
+void OnDeinit(const int reason)
+{
+   g_lifecycle.OnDeinit(reason);
+   g_launcher.Teardown(reason);
+   g_lifecycle.Shutdown();
+}
 void OnTick()                   { g_lifecycle.OnTick(); }
 void OnTimer()                  { g_lifecycle.OnTimer(); }

@@ -3,6 +3,8 @@
 #include "strategy_registry.mqh"
 #include "../dispatcher/event_sink.mqh"
 #include "../dispatcher/event_dispatcher.mqh"
+#include "../container/service_locator.mqh"
+#include "../container/service_keys.mqh"
 
 class CStrategyHost : public IEventSink
 {
@@ -24,7 +26,7 @@ public:
 
    void SetRegistry(CStrategyRegistry* registry) { m_registry = registry; }
 
-   bool Launch(CLauncherBundle& bundle, CEventDispatcher* dispatcher)
+   bool Launch(CLauncherBundle& bundle)
    {
       if(m_registry == NULL || m_registry.Count() == 0)
       {
@@ -58,6 +60,8 @@ public:
       }
       LogInfo(StringFormat("Strategy initialized: %s", m_strategy.Name()));
 
+      CEventDispatcher* dispatcher = (CEventDispatcher*)Resolve(SVC_DISPATCHER);
+      if(dispatcher == NULL) { LogError("StrategyHost: dispatcher not in container"); return false; }
       dispatcher.Register(GetPointer(this));
       return true;
    }

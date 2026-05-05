@@ -9,11 +9,8 @@ public:
 
    virtual EVENT_RESULT Handle(CEventContext& context) override
    {
-      if(context.Type == EVENT_NEW_BAR || context.Type == EVENT_TIMER)
-      {
-         context.Signal = 0;
+      if(context.SignalId == "new_bar" || context.SignalId == "timer")
          LogDebug("DummySignalHandler: no signal");
-      }
       return EVENT_CONTINUE;
    }
 };

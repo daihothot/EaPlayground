@@ -3,46 +3,48 @@
 #include "../launcher/launcher_bundle.mqh"
 #include "../dispatcher/event_dispatcher.mqh"
 #include "../state/runtime_state.mqh"
+#include "../signal/signal_collector.mqh"
+#include "../signal/builtin_sources.mqh"
+#include "../timer/timer_scheduler.mqh"
+#include "../container/service_container.mqh"
+#include "../container/service_locator.mqh"
+#include "../container/service_keys.mqh"
 
 class CEaLifecycle
 {
-private:
-   CLauncherBundle*  m_bundle;      // non-owning
-   CEventDispatcher* m_dispatcher;  // non-owning
-   CRuntimeState     m_state;       // owned
-
-   void DispatchEvent(EVENT_TYPE type, const string msg)
-   {
-      m_state.LastTickTime = TimeCurrent();
-      CEventContext ctx;
-      ctx.Bundle    = m_bundle;
-      ctx.State     = GetPointer(m_state);
-      ctx.Type      = type;
-      ctx.Time      = TimeCurrent();
-      ctx.Symbol    = m_bundle.Symbol;
-      ctx.Timeframe = m_bundle.Timeframe;
-      ctx.Message   = msg;
-      m_dispatcher.Dispatch(ctx);
-   }
-
 public:
-   CEaLifecycle() : m_bundle(NULL), m_dispatcher(NULL) {}
-
-   void Init(CLauncherBundle* bundle, CEventDispatcher* dispatcher)
+   void Init(CLauncherBundle* bundle)
    {
-      m_bundle     = bundle;
-      m_dispatcher = dispatcher;
-      EventSetTimer(m_bundle.TimerSeconds);
+      // Root container is owned by the locator — just ask it to come up.
+      InitContainer();
+      CServiceContainer* root = Container();
+
+      root.RegisterRef(SVC_BUNDLE, bundle);
+      root.Register(SVC_RUNTIME_STATE, new CRuntimeState());
+      root.Register(SVC_DISPATCHER,    new CEventDispatcher());
+      root.Register(SVC_COLLECTOR,     new CSignalCollector());
+      root.Register(SVC_SCHEDULER,     new CTimerScheduler());
+
+      // Wire collector with built-in signal sources.
+      CSignalCollector* collector = (CSignalCollector*)Resolve(SVC_COLLECTOR);
+      collector.Init();
+      collector.Register(new CTickSignalSource());
+      collector.Register(new CNewBarSignalSource());
+
+      EventSetTimer(bundle.TimerSeconds);
    }
 
-   void OnTick()  { DispatchEvent(EVENT_TICK,  "tick"); }
+   void OnTick()  { ((CSignalCollector*)Resolve(SVC_COLLECTOR)).Collect(); }
+   void OnTimer() { ((CTimerScheduler*) Resolve(SVC_SCHEDULER)).Tick();    }
 
-   void OnTimer()
+   void OnDeinit(const int reason)
    {
-      DispatchEvent(EVENT_TIMER, "timer");
-      LogInfo("EVENT_TIMER dispatched");
+      EventKillTimer();
    }
 
-   void OnDeinit(const int reason) { EventKillTimer(); }
+   void Shutdown()
+   {
+      ShutdownContainer();
+   }
 };
 #endif // FRAMEWORK_LIFECYCLE_EA_LIFECYCLE_MQH

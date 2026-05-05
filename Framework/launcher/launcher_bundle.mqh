@@ -1,8 +1,9 @@
 #ifndef FRAMEWORK_LAUNCHER_BUNDLE_MQH
 #define FRAMEWORK_LAUNCHER_BUNDLE_MQH
+#include <Object.mqh>
 #include "../log/logger.mqh"
 
-class CLauncherBundle
+class CLauncherBundle : public CObject
 {
 public:
    LOG_LEVEL MinLogLevel;

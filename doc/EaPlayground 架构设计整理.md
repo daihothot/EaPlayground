@@ -55,7 +55,7 @@ Strategy -> EaPlayground.mq5
 - `Framework` 只放稳定、可复用、与具体策略无关的基础设施。
 - 真实下单只允许集中在 `ExecutionHandler` 或后续交易执行模块中。
 
-MQL5 语法上要求 `OnInit()`、`OnTick()`、`OnTimer()`、`OnDeinit()` 定义在 `.mq5` 主文件中，但这些函数应保持很薄。`OnInit()` 使用 launcher 完成启动装配，后续生命周期入口直接转发给 lifecycle。
+MQL5 语法上要求 `OnInit()`、`OnTick()`、`OnTimer()`、`OnDeinit()` 定义在 `.mq5` 主文件中，但这些函数应保持很薄。`OnInit()` 先初始化 lifecycle/container，再使用 launcher 完成启动装配；`OnDeinit()` 按事件源、launcher、container 的顺序分阶段释放。
 
 ---
 
@@ -72,8 +72,9 @@ MQL5 语法上要求 `OnInit()`、`OnTick()`、`OnTimer()`、`OnDeinit()` 定义
 - 创建或配置 `Framework/launcher` 和 lifecycle runtime。
 - 将 input 值写入 `LauncherBundle`。
 - 调用策略入口注册函数，将策略描述和 factory 注册进 registry。
-- `OnInit()` 调用 launcher 完成装配。
-- `OnTick()` / `OnTimer()` / `OnDeinit()` 薄转发给 lifecycle。
+- `OnInit()` 先初始化 lifecycle/container，再调用 launcher 完成装配。
+- `OnTick()` / `OnTimer()` 薄转发给 lifecycle。
+- `OnDeinit()` 按“停事件源 -> launcher teardown -> container shutdown”的顺序释放，确保 teardown 期间仍可解析容器服务。
 
 不放入：
 
@@ -96,12 +97,15 @@ int OnInit()
    g_launcher.Bundle().MagicNumber = InpMagicNumber;
    RegisterStrategies(g_launcher.Registry());
 
+   g_lifecycle.Init(g_launcher.Bundle());
    return g_launcher.Launch();
 }
 
 void OnDeinit(const int reason)
 {
    g_lifecycle.OnDeinit(reason);
+   g_launcher.Teardown(reason);
+   g_lifecycle.Shutdown();
 }
 
 void OnTick()
@@ -1102,7 +1106,7 @@ EaPlayground.mq5
 - 编译 0 errors
 - EA 能加载到图表
 - `.mq5` 输入参数能被 Launcher 接收并封装到 `LauncherBundle`
-- `.mq5` 的 `OnInit()` 能正确委托到 launcher，`OnTick()` / `OnTimer()` / `OnDeinit()` 能正确委托到 lifecycle
+- `.mq5` 的 `OnInit()` 能正确初始化 lifecycle/container 并委托到 launcher，`OnTick()` / `OnTimer()` 能正确委托到 lifecycle，`OnDeinit()` 能按顺序完成 timer 停止、launcher teardown 和 container shutdown
 - 策略通过 `RegisterStrategies()` 注册 descriptor 和 factory
 - strategy registry 能完成策略注册和查询
 - strategy host 能选择策略、执行 `SelfTest()`、创建、初始化和释放策略实例

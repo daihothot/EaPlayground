@@ -9,15 +9,7 @@ public:
 
    virtual EVENT_RESULT Handle(CEventContext& context) override
    {
-      string typeName;
-      switch(context.Type)
-      {
-         case EVENT_TICK:    typeName = "TICK";    break;
-         case EVENT_NEW_BAR: typeName = "NEW_BAR"; break;
-         case EVENT_TIMER:   typeName = "TIMER";   break;
-         default:            typeName = "UNKNOWN"; break;
-      }
-      LogDebug(StringFormat("[%s] %s", typeName, context.Message));
+      LogDebug(StringFormat("[%s] %s", context.SignalId, context.Message));
       return EVENT_CONTINUE;
    }
 };

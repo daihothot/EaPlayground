@@ -9,10 +9,7 @@ public:
 
    virtual EVENT_RESULT Handle(CEventContext& context) override
    {
-      if(context.Signal != 0)
-         LogInfo(StringFormat("DummyExecutionHandler: signal=%d, skipped real execution", context.Signal));
-      else
-         LogInfo("DummyExecutionHandler skipped real execution");
+      LogInfo("DummyExecutionHandler skipped real execution");
       return EVENT_CONTINUE;
    }
 };
