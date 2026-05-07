@@ -39,12 +39,12 @@ class CDummyStrategyFactory : public IStrategyFactory
 public:
    virtual string Id() override { return "dummy"; }
 
-   virtual bool SelfTest(CLauncherBundle& bundle, string& reason) override
+   virtual bool SelfTest(CLauncherBundle* bundle, string& reason) override
    {
       return true;
    }
 
-   virtual IStrategy* Create(CLauncherBundle& bundle) override
+   virtual IStrategy* Create(CLauncherBundle* bundle) override
    {
       return new CDummyStrategy();
    }

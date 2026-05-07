@@ -15,6 +15,10 @@ class CEaLifecycle
 public:
    void Init(CLauncherBundle* bundle)
    {
+      if(bundle == NULL) { LogError("Lifecycle: bundle is NULL"); return; }
+
+      LogSetLevel(bundle.MinLogLevel);
+
       // Root container is owned by the locator — just ask it to come up.
       InitContainer();
       CServiceContainer* root = Container();

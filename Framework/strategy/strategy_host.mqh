@@ -26,8 +26,14 @@ public:
 
    void SetRegistry(CStrategyRegistry* registry) { m_registry = registry; }
 
-   bool Launch(CLauncherBundle& bundle)
+   bool Launch(CLauncherBundle* bundle)
    {
+      if(bundle == NULL)
+      {
+         LogError("StrategyHost: bundle is NULL");
+         return false;
+      }
+
       if(m_registry == NULL || m_registry.Count() == 0)
       {
          LogError("StrategyHost: no strategies registered");
@@ -69,7 +75,11 @@ public:
    void Deinit(const int reason)
    {
       if(m_strategy != NULL)
+      {
          m_strategy.Deinit(reason);
+         delete m_strategy;
+         m_strategy = NULL;
+      }
    }
 
    virtual string Name() override { return "StrategyHost"; }
